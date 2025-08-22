@@ -1,11 +1,10 @@
 from time import sleep
-
 from typing import List
-import logging
 import threading
+from random import shuffle
 
 
-
+TIME_DILATION = 600 #run elevators at 10 minutes per second
 
 
 class Person:
@@ -38,19 +37,23 @@ class Elevator:
     
     def travel(self, floor: int) -> None:
         global total_travel_time
-        travel_time = (self.current_floor - floor) * 5
+        travel_time = abs(self.current_floor - floor) * 5
         with threading.Lock():
-            total_travel_time += abs(travel_time)
+            total_travel_time += travel_time
         self.current_floor = floor
-        sleep(abs(travel_time) // 5)
+        sleep(travel_time / TIME_DILATION)
         self.stop()
     
     
     def stop(self):
+        global total_travel_time
         for person in self.people:
             if person.floor == self.current_floor:
                 person.in_elevator = False
         self.people = [p for p in self.people if p.in_elevator]
+        sleep(8 / TIME_DILATION)
+        with threading.Lock():
+            total_travel_time += 8
 
 
 class Building:
@@ -70,33 +73,46 @@ class Building:
             self.people.append(Person(5))
         for _ in range(20):
             self.people.append(Person(6))
+        #shuffle the people
+        shuffle(self.people)
 
     
-    def load_elevator(self, elevator_index: int) -> None:
+    def load_elevator(self, elevator: Elevator) -> None:
         new_self_people = self.people.copy() #We do this so that we can modify self.people during iteration.
         for person in self.people:
-            if len(self.elevators[elevator_index].people) < self.elevators[elevator_index].capacity and self.elevators[elevator_index].current_floor == 0:
-                self.elevators[elevator_index].add_person(person)
+            if len(elevator.people) < elevator.capacity and elevator.current_floor == 0:
+                elevator.add_person(person)
                 #Remove person from building list
                 new_self_people.remove(person)
             else:
                 break
         self.people = new_self_people
+        print(f"An elevator has been loaded. There are {len(self.people)} people left on the ground floor.")
     
     def load_all_elevators(self) -> None:
-        for i in range(len(self.elevators)):
-            self.load_elevator(i)
+        for elevator in self.elevators:
+            self.load_elevator(elevator)
 
 building = Building()
 
 #main loop
 
 def elevator_behavior(elevator: Elevator):
+    global building
     while True:
         if len(elevator.people) == 0:
             #Go to ground floor and wait
             elevator.travel(0)
-            break
+            
+            # Load people from ground floor
+
+            if len(building.people) > 0:
+                with threading.Lock():
+                    building.load_elevator(elevator)
+            else:
+                break
+
+
         else:
             for person in elevator.people:
                 person.push_elevator_button(elevator)
@@ -104,13 +120,16 @@ def elevator_behavior(elevator: Elevator):
 
 total_travel_time= 0
 
-while len(building.people) > 0:
-    building.load_all_elevators()
-    threads: List[threading.Thread] = []
-    for i, elevator in enumerate(building.elevators):
-        threads.append(threading.Thread(target=elevator_behavior, args=(elevator,)))
-        threads[i].start()
-    for thread in threads: thread.join()
-    print(len(building.people), "left on the ground floor.")
+elevator_threads: List[threading.Thread] = []
 
-print(f"Total travel time: {total_travel_time} seconds.")
+for elevator in building.elevators:
+    print("elevator started")
+    t = threading.Thread(target=elevator_behavior, args=(elevator,))
+    elevator_threads.append(t)
+    t.start()
+
+for t in elevator_threads: t.join() # Wait for all elevators to finish
+travel_hours = total_travel_time // 3600
+travel_minutes = (total_travel_time // 60)%60
+total_travel_time %= 60
+print(f"total travel time: {travel_hours}:{travel_minutes}:{total_travel_time}")
