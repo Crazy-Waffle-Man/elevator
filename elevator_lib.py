@@ -15,15 +15,16 @@ class Person:
         self.elevator_in: List['Elevator'] = [] # not in an elevator yet, use a list so we can have them in no elevator.
     def __repr__(self) -> str:
         return f"Person(floor={self.floor}, in_elevator={self.in_elevator})"
-    def push_elevator_button(self, elevator: 'Elevator') -> None: # so that we can use Elevator before definition
+    def push_elevator_button(self, elevator: 'Elevator') -> None: # 'Elevator' so that we can use Elevator before definition
         elevator.travel(self.floor)
     
 class Elevator:
     
-    def __init__(self):
+    def __init__(self, served_floors: List[int] = [1, 2, 3, 4, 5, 6]):
         self.capacity: int = 10
         self.current_floor: int = 0
         self.people: List[Person] = []
+        self.served_floors: List[int] = served_floors
     
     
     def add_person(self, person: Person) -> bool:
@@ -53,7 +54,7 @@ class Elevator:
         self.people = [p for p in self.people if p.in_elevator]
         sleep(8 / TIME_DILATION)
         with threading.Lock():
-            total_travel_time += 8
+            total_travel_time += (8 * 4)
 
 
 class Building:
@@ -75,6 +76,22 @@ class Building:
             self.people.append(Person(6))
         #shuffle the people
         shuffle(self.people)
+
+
+    def smart_load_elevator(self, elevator: Elevator) -> None:
+        if len(elevator.people) < elevator.capacity and elevator.current_floor == 0:
+            new_self_people = self.people.copy()
+            for person in self.people:
+                if person.floor not in elevator.served_floors:
+                    continue # Don't let them on the wrong elevator
+                else:
+                    if elevator.add_person(person):
+                        new_self_people.remove(person)
+                if len(elevator.people) >= elevator.capacity:
+                    break
+            self.people = new_self_people
+            print(f"An elevator has been loaded. There are {len(self.people)} people left on the ground floor.")
+            
 
     
     def load_elevator(self, elevator: Elevator) -> None:
