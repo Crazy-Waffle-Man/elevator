@@ -109,6 +109,8 @@ def elevator_behavior(elevator: Elevator):
             if len(building.people) > 0:
                 with threading.Lock():
                     building.load_elevator(elevator)
+                    #sort people by floor from least to greatest
+                    elevator.people.sort(key=lambda p: p.floor)
             else:
                 break
 
@@ -123,7 +125,7 @@ total_travel_time= 0
 elevator_threads: List[threading.Thread] = []
 
 for elevator in building.elevators:
-    print("elevator started")
+    print("Elevator started")
     t = threading.Thread(target=elevator_behavior, args=(elevator,))
     elevator_threads.append(t)
     t.start()
