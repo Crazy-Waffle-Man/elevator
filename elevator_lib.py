@@ -1,10 +1,10 @@
-from time import sleep
-from typing import List
 import threading
 from random import shuffle
+from typing import List
+from time import sleep
 
-
-TIME_DILATION = 600 #run elevators at 10 minutes per second
+total_travel_time = 0
+TIME_DILATION = 6000 #run elevators at 100 minutes per second (1:40:00 / s)
 
 
 class Person:
@@ -95,8 +95,6 @@ class Building:
 
 building = Building()
 
-#main loop
-
 def elevator_behavior(elevator: Elevator):
     global building
     while True:
@@ -118,21 +116,3 @@ def elevator_behavior(elevator: Elevator):
         else:
             for person in elevator.people:
                 person.push_elevator_button(elevator)
-
-
-total_travel_time= 0
-
-elevator_threads: List[threading.Thread] = []
-
-for elevator in building.elevators:
-    print("Elevator started")
-    t = threading.Thread(target=elevator_behavior, args=(elevator,))
-    elevator_threads.append(t)
-    t.start()
-
-for t in elevator_threads: t.join() # Wait for all elevators to finish
-total_travel_time /= 4
-travel_hours = int(total_travel_time // 3600)
-travel_minutes = int((total_travel_time // 60)%60)
-total_travel_time %= 60
-print(f"total travel time: {travel_hours}:{travel_minutes}:{total_travel_time}")
