@@ -3,7 +3,6 @@ from random import shuffle
 from typing import List
 from time import sleep
 
-total_travel_time = 0
 TIME_DILATION = 6000 #run elevators at 100 minutes per second (1:40:00 / s)
 
 
@@ -25,6 +24,7 @@ class Elevator:
         self.current_floor: int = 0
         self.people: List[Person] = []
         self.served_floors: List[int] = served_floors
+        self.sim_time: int = 0
     
     
     def add_person(self, person: Person) -> bool:
@@ -37,24 +37,21 @@ class Elevator:
 
     
     def travel(self, floor: int) -> None:
-        global total_travel_time
         travel_time = abs(self.current_floor - floor) * 5
-        with threading.Lock():
-            total_travel_time += travel_time
+        self.sim_time += travel_time
         self.current_floor = floor
         sleep(travel_time / TIME_DILATION)
         self.stop()
     
     
     def stop(self):
-        global total_travel_time
         for person in self.people:
             if person.floor == self.current_floor:
                 person.in_elevator = False
         self.people = [p for p in self.people if p.in_elevator]
         sleep(8 / TIME_DILATION)
-        with threading.Lock():
-            total_travel_time += (8 * 4)
+        if self.current_floor == 0: self.sim_time += 4
+        self.sim_time += 8
 
 
 class Building:
@@ -83,14 +80,20 @@ class Building:
             new_self_people = self.people.copy()
             for person in self.people:
                 if person.floor not in elevator.served_floors:
-                    continue # Don't let them on the wrong elevator
+                    #check if nobody is able to get on this elevator
+                    if [p for p in self.people if p.floor in elevator.served_floors] == []:
+                        #if nobody can get on this elevator, let everyone get on
+                        if elevator.add_person(person):
+                            new_self_people.remove(person)
+                    else:
+                        continue
                 else:
                     if elevator.add_person(person):
                         new_self_people.remove(person)
                 if len(elevator.people) >= elevator.capacity:
                     break
             self.people = new_self_people
-            print(f"An elevator has been loaded. There are {len(self.people)} people left on the ground floor.")
+            # print(f"An elevator has been loaded. There are {len(self.people)} people left on the ground floor.")
             
 
     
@@ -104,7 +107,7 @@ class Building:
             else:
                 break
         self.people = new_self_people
-        print(f"An elevator has been loaded. There are {len(self.people)} people left on the ground floor.")
+        # print(f"An elevator has been loaded. There are {len(self.people)} people left on the ground floor.")
     
     def load_all_elevators(self) -> None:
         for elevator in self.elevators:
@@ -133,3 +136,26 @@ def elevator_behavior(elevator: Elevator):
         else:
             for person in elevator.people:
                 person.push_elevator_button(elevator)
+
+
+def go(function = elevator_behavior):
+    global building
+    building.__init__()
+    elevator_threads: List[threading.Thread] = []
+
+    for elevator in building.elevators:
+        # print("Elevator started")
+        t = threading.Thread(target = function, args=(elevator,))
+        elevator_threads.append(t)
+        t.start()
+
+    for t in elevator_threads: t.join() # Wait for all elevators to finish
+    # print(f"All elevators have finished.")
+    print(f"Time elapsed: {parse_time()}")
+
+def parse_time() -> str:
+    test_results: List[int] = [e.sim_time for e in building.elevators]
+
+    max_time = max(test_results)
+
+    return f"{max_time // 3600}:{(max_time // 60) % 60}:{max_time % 60}"
