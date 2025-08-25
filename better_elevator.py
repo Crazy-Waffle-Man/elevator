@@ -4,11 +4,39 @@ from typing import List
 
 #this will be the same as stupid_elevator.py, but with changes to the elevator logic
 
-elevator_lib.building.elevators[0].served_floors = [1, 2, 3]
-elevator_lib.building.elevators[1].served_floors = [4]
-elevator_lib.building.elevators[2].served_floors = [4, 5]
+elevator_lib.building.elevators[0].served_floors = [1, 2]
+elevator_lib.building.elevators[1].served_floors = [3, 4]
+elevator_lib.building.elevators[2].served_floors = [4]
 elevator_lib.building.elevators[3].served_floors = [5, 6]
 # Experiment with different served floors for each elevator
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def better_elevator_behavior(elevator: elevator_lib.Elevator):
     while True:
@@ -22,7 +50,6 @@ def better_elevator_behavior(elevator: elevator_lib.Elevator):
                 with threading.Lock():
                     elevator_lib.building.smart_load_elevator(elevator)
                     #sort people by floor from least to greatest
-                    elevator.people.sort(key=lambda p: p.floor)
             else:
                 break
 

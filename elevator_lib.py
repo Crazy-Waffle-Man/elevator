@@ -3,7 +3,7 @@ from random import shuffle
 from typing import List
 from time import sleep
 
-TIME_DILATION = 6000 #run elevators at 100 minutes per second (1:40:00 / s)
+TIME_DILATION = 60000 #run elevators at 1000 minutes per second 
 
 
 class Person:
@@ -93,6 +93,11 @@ class Building:
                 if len(elevator.people) >= elevator.capacity:
                     break
             self.people = new_self_people
+            elevator.people.sort(key=lambda p: p.floor)
+            print("#################################")
+            print(elevator.served_floors)
+            print([f.floor for f in elevator.people])
+            print("#################################")
             # print(f"An elevator has been loaded. There are {len(self.people)} people left on the ground floor.")
             
 
@@ -113,8 +118,8 @@ class Building:
         for elevator in self.elevators:
             self.load_elevator(elevator)
 
-building = Building()
 
+building = Building()
 def elevator_behavior(elevator: Elevator):
     global building
     while True:
@@ -128,7 +133,7 @@ def elevator_behavior(elevator: Elevator):
                 with threading.Lock():
                     building.load_elevator(elevator)
                     #sort people by floor from least to greatest
-                    elevator.people.sort(key=lambda p: p.floor)
+                elevator.people.sort(key=lambda p: p.floor)
             else:
                 break
 
@@ -153,9 +158,7 @@ def go(function = elevator_behavior):
     # print(f"All elevators have finished.")
     print(f"Time elapsed: {parse_time()}")
 
-def parse_time() -> str:
+def parse_time():
     test_results: List[int] = [e.sim_time for e in building.elevators]
 
-    max_time = max(test_results)
-
-    return f"{max_time // 3600}:{(max_time // 60) % 60}:{max_time % 60}"
+    return max(test_results)
