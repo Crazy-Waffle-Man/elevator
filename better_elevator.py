@@ -11,33 +11,6 @@ elevator_lib.building.elevators[3].served_floors = [5, 6]
 # Experiment with different served floors for each elevator
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def better_elevator_behavior(elevator: elevator_lib.Elevator):
     while True:
         if len(elevator.people) == 0:
